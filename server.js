@@ -15,7 +15,10 @@ app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 
 const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST",["PUT"] }
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT"],
+  },
 });
 
 
@@ -306,6 +309,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(` Messaging server running on port ${PORT}`);
 });
+
 
 
 
