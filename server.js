@@ -18,7 +18,7 @@ app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 
 const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] },
+  cors: { origin: "*", methods: ["GET", "POST",["PUT"] },
 });
 
 /* ─────────────────────────────
@@ -288,6 +288,38 @@ io.on("connection", (socket) => {
   });
 });
 
+// Get unread count for a conversation
+app.get("/conversations/:conversationId/unread-count", auth, async (req, res) => {
+  const { conversationId } = req.params;
+  const userId = req.user.id;
+
+  const count = await Message.countDocuments({
+    conversationId,
+    readBy: { $ne: userId },
+  });
+
+  res.json({ unreadCount: count });
+});
+
+
+app.put("/conversations/:conversationId/read", auth, async (req, res) => {
+  const userId = req.user.id;
+
+  await Message.updateMany(
+    {
+      conversationId: req.params.conversationId,
+      readBy: { $ne: userId },
+    },
+    {
+      $addToSet: { readBy: userId },
+    }
+  );
+
+  res.json({ success: true });
+});
+
+
+
 /* ─────────────────────────────
    START SERVER
 ───────────────────────────── */
@@ -295,3 +327,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(` Messaging server running on port ${PORT}`);
 });
+
