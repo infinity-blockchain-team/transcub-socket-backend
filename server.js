@@ -8,6 +8,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+/* ─────────────────────────────
+   APP & SERVER
+───────────────────────────── */
 const app = express();
 const server = http.createServer(app);
 
@@ -15,20 +18,21 @@ app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-
+/* ─────────────────────────────
+   DATABASE
+───────────────────────────── */
 mongoose.connect(process.env.MONGO_URI);
 
 mongoose.connection.once("open", () => {
   console.log("Messaging DB connected");
 });
 
-
+/* ─────────────────────────────
+   MODELS
+───────────────────────────── */
 
 // 🔹 Appointment (EXACT copy from main backend)
 const appointmentSchema = new mongoose.Schema(
@@ -100,7 +104,7 @@ const appointmentSchema = new mongoose.Schema(
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 
-
+// 🔹 Conversation (1 per appointment)
 const conversationSchema = new mongoose.Schema(
   {
     appointmentId: {
@@ -125,7 +129,7 @@ const conversationSchema = new mongoose.Schema(
 
 const Conversation = mongoose.model("Conversation", conversationSchema);
 
-
+// 🔹 Message
 const messageSchema = new mongoose.Schema(
   {
     conversationId: {
@@ -144,7 +148,9 @@ const messageSchema = new mongoose.Schema(
 
 const Message = mongoose.model("Message", messageSchema);
 
-
+/* ─────────────────────────────
+   AUTH MIDDLEWARE
+───────────────────────────── */
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "No token" });
@@ -157,6 +163,9 @@ function auth(req, res, next) {
   }
 }
 
+/* ─────────────────────────────
+   APPOINTMENT ACCESS CHECK
+───────────────────────────── */
 // function isAllowedUser(appointment, user) {
 //   if (user.role === "USER")
 //     return appointment.user.toString() === user.id;
@@ -186,7 +195,9 @@ function isAllowedUser(appointment, user) {
   return true;
 }
 
-
+/* ─────────────────────────────
+   REST APIs
+───────────────────────────── */
 
 // Create or fetch conversation
 app.post("/conversations", auth, async (req, res) => {
@@ -230,7 +241,9 @@ app.get("/messages/:conversationId", auth, async (req, res) => {
   res.json(messages);
 });
 
-
+/* ─────────────────────────────
+   SOCKET AUTH
+───────────────────────────── */
 io.use((socket, next) => {
   try {
     socket.user = jwt.verify(
@@ -243,7 +256,9 @@ io.use((socket, next) => {
   }
 });
 
-
+/* ─────────────────────────────
+   SOCKET EVENTS
+───────────────────────────── */
 io.on("connection", (socket) => {
   console.log("🔌 Connected:", socket.user.id);
 
@@ -273,43 +288,10 @@ io.on("connection", (socket) => {
   });
 });
 
-
-// app.get("/conversations/:conversationId/unread-count", auth, async (req, res) => {
-//   const { conversationId } = req.params;
-//   const userId = req.user.id;
-
-//   const count = await Message.countDocuments({
-//     conversationId,
-//     readBy: { $ne: userId },
-//   });
-
-//   res.json({ unreadCount: count });
-// });
-
-
-// app.put("/conversations/:conversationId/read", auth, async (req, res) => {
-//   const userId = req.user.id;
-
-//   await Message.updateMany(
-//     {
-//       conversationId: req.params.conversationId,
-//       readBy: { $ne: userId },
-//     },
-//     {
-//       $addToSet: { readBy: userId },
-//     }
-//   );
-
-//   res.json({ success: true });
-// });
-
-
-
+/* ─────────────────────────────
+   START SERVER
+───────────────────────────── */
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(` Messaging server running on port ${PORT}`);
 });
-
-
-
-
