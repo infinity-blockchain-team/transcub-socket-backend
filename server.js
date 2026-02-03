@@ -21,6 +21,15 @@ const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
+
+app.get("/", (req, res) => {
+  res.status(200).send("ok");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).send("ok");
+});
+
 /* ─────────────────────────────
    DATABASE
 ───────────────────────────── */
@@ -33,13 +42,7 @@ mongoose.connection.once("open", () => {
 /* ─────────────────────────────
    MODELS
 ───────────────────────────── */
-app.get("/", (req, res) => {
-  res.status(200).send("ok");
-});
 
-app.get("/health", (req, res) => {
-  res.status(200).send("ok");
-});
 
 // 🔹 Appointment (EXACT copy from main backend)
 const appointmentSchema = new mongoose.Schema(
@@ -302,5 +305,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(` Messaging server running on port ${PORT}`);
 });
+
 
 
